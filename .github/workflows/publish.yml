@@ -31,7 +31,14 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
-      - run: npm ci
+      # --ignore-scripts is load-bearing, not a speed tweak. n8n-workflow pulls
+      # @n8n/expression-runtime -> isolated-vm, a native addon that fails to
+      # compile against Node 20's V8 ("'SourceLocation' in namespace 'v8' does
+      # not name a type") and killed the first two release runs. We depend on
+      # n8n-workflow for TYPES ONLY — nothing here executes it — so skipping
+      # install scripts removes the compile entirely. Verified: tsc and eslint
+      # both still pass with it.
+      - run: npm ci --ignore-scripts
 
       - run: npm run build
 
