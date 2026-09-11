@@ -53,6 +53,23 @@ export class SkodeCrm implements INodeType {
 		},
 		properties: [
 			{
+				displayName: 'Organization ID',
+				name: 'organizationId',
+				type: 'string',
+				default: '',
+				description: 'Which Skode CRM workspace to act in. Required only if your account belongs to more than one organization — leave blank for single-org accounts. Find it in the CRM under Settings, or in the address bar as ?org=. Sent as the X-Skode-Org-ID header.',
+				routing: {
+					// Sent as a header, and only when filled ($value || undefined
+					// makes n8n omit it entirely for single-org accounts). Never
+					// touches the request body.
+					request: {
+						headers: {
+							'X-Skode-Org-Id': '={{ $value || undefined }}',
+						},
+					},
+				},
+			},
+			{
 				displayName: 'Resource',
 				name: 'resource',
 				type: 'options',

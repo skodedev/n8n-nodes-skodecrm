@@ -47,6 +47,13 @@ export class SkodeCrmTrigger implements INodeType {
 		],
 		properties: [
 			{
+				displayName: 'Organization ID',
+				name: 'organizationId',
+				type: 'string',
+				default: '',
+				description: 'Which Skode CRM workspace this trigger belongs to. Required only if your account belongs to more than one organization. Sent as X-Skode-Org-ID when registering the webhook.',
+			},
+			{
 				displayName: 'Event',
 				name: 'event',
 				type: 'options',
@@ -74,8 +81,12 @@ export class SkodeCrmTrigger implements INodeType {
 			async create(this: IHookFunctions): Promise<boolean> {
 				const webhookUrl = this.getNodeWebhookUrl('default');
 				const event = this.getNodeParameter('event') as string;
+				const orgId = (this.getNodeParameter('organizationId', '') as string) || '';
 				const credentials = await this.getCredentials('skodeCrmOAuth2Api');
 				const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
+
+				const headers: Record<string, string> = { 'X-Skode-Partner': 'n8n' };
+				if (orgId) headers['X-Skode-Org-Id'] = orgId;
 
 				const response = await this.helpers.httpRequestWithAuthentication.call(
 					this,
@@ -84,7 +95,7 @@ export class SkodeCrmTrigger implements INodeType {
 						method: 'POST',
 						url: `${baseUrl}/api/partner/v1/hooks/`,
 						body: { target_url: webhookUrl, event },
-						headers: { 'X-Skode-Partner': 'n8n' },
+						headers,
 						json: true,
 					},
 				);
@@ -112,7 +123,12 @@ export class SkodeCrmTrigger implements INodeType {
 						{
 							method: 'DELETE',
 							url: `${baseUrl}/api/partner/v1/hooks/${webhookData.subscriptionId}/`,
-							headers: { 'X-Skode-Partner': 'n8n' },
+							headers: (() => {
+								const h: Record<string, string> = { 'X-Skode-Partner': 'n8n' };
+								const orgId = (this.getNodeParameter('organizationId', '') as string) || '';
+								if (orgId) h['X-Skode-Org-Id'] = orgId;
+								return h;
+							})(),
 							json: true,
 						},
 					);
