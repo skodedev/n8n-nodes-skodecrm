@@ -1,0 +1,42 @@
+name: Publish to npm (with provenance)
+
+# n8n verified-node rule (from 1 May 2026): verified nodes MUST be published
+# from CI with an npm provenance statement — not from a local machine. This
+# workflow does exactly that. Publishing is triggered by pushing a version tag.
+#
+# One-time setup:
+#   1. npm token: repo Settings → Secrets → Actions → NPM_TOKEN (an Automation
+#      token from npmjs.com; provenance needs a token, not just OIDC).
+#   2. The npm account must have 2FA set to "auth only" (or use a granular
+#      automation token) so CI can publish.
+# Release:  npm version patch  &&  git push --follow-tags
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write # required for npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm run lint
+
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

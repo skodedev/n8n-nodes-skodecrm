@@ -1,0 +1,7 @@
+*.ts
+!*.d.ts
+tsconfig.json
+gulpfile.js
+.eslintrc.js
+.github/
+node_modules/
