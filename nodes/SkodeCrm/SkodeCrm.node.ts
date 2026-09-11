@@ -21,16 +21,19 @@ export class SkodeCrm implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Skode CRM',
 		name: 'skodeCrm',
-		icon: 'file:skodecrm.svg',
+		icon: { light: 'file:skodecrm.light.svg', dark: 'file:skodecrm.dark.svg' },
 		group: ['transform'],
 		version: 1,
+		// Safe for an AI agent to call: every operation is an explicit,
+		// described CRM action against one org, gated by the credential.
+		usableAsTool: true,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Create, update and search leads in Skode CRM',
 		defaults: {
 			name: 'Skode CRM',
 		},
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'skodeCrmOAuth2Api',

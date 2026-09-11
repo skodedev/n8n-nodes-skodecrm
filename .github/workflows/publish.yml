@@ -40,6 +40,8 @@ jobs:
       # both still pass with it.
       - run: npm ci --ignore-scripts
 
+      # Official n8n toolchain — the same lint the Creator Portal
+      # pre-check runs. A local pass here is what verification checks.
       - run: npm run build
 
       - run: npm run lint

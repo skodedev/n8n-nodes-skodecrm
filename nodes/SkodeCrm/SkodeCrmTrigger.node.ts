@@ -21,7 +21,7 @@ export class SkodeCrmTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Skode CRM Trigger',
 		name: 'skodeCrmTrigger',
-		icon: 'file:skodecrm.svg',
+		icon: { light: 'file:skodecrm.light.svg', dark: 'file:skodecrm.dark.svg' },
 		group: ['trigger'],
 		version: 1,
 		subtitle: '={{$parameter["event"]}}',
@@ -30,7 +30,7 @@ export class SkodeCrmTrigger implements INodeType {
 			name: 'Skode CRM Trigger',
 		},
 		inputs: [],
-		outputs: ['main'],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'skodeCrmOAuth2Api',
@@ -116,8 +116,16 @@ export class SkodeCrmTrigger implements INodeType {
 							json: true,
 						},
 					);
-				} catch {
-					// Subscription already gone CRM-side — treat as removed.
+				} catch (error) {
+					// A delete that fails because the subscription is already gone
+					// is fine, but we must not pretend nothing happened: log it so
+					// a genuine failure (auth expired, CRM down) is visible rather
+					// than silently leaving a live subscription behind.
+					this.logger.warn(
+						`Skode CRM Trigger: could not remove webhook subscription ${webhookData.subscriptionId}: ${
+							(error as Error)?.message ?? error
+						}`,
+					);
 				}
 				delete webhookData.subscriptionId;
 				return true;

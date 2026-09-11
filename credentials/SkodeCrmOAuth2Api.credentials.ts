@@ -17,6 +17,9 @@ export class SkodeCrmOAuth2Api implements ICredentialType {
 
 	extends = ['oAuth2Api'];
 
+	// Themed variants so the mark reads correctly on light and dark canvases.
+	icon = { light: 'file:../nodes/SkodeCrm/skodecrm.light.svg', dark: 'file:../nodes/SkodeCrm/skodecrm.dark.svg' } as const;
+
 	displayName = 'Skode CRM OAuth2 API';
 
 	documentationUrl = 'https://skode.ai';
