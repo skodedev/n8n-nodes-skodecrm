@@ -1,4 +1,11 @@
-import type { INodeType, INodeTypeDescription } from 'n8n-workflow';
+import type {
+	INodeType,
+	INodeTypeDescription,
+	ILoadOptionsFunctions,
+	ResourceMapperFields,
+	ResourceMapperField,
+	INodePropertyOptions,
+} from 'n8n-workflow';
 import { NodeConnectionTypes } from 'n8n-workflow';
 
 /**
@@ -14,9 +21,42 @@ import { NodeConnectionTypes } from 'n8n-workflow';
  *   GET    /api/partner/v1/leads/fields/
  * Connection test hits GET /api/partner/v1/me/.
  *
- * Declarative style = no runtime dependencies (a verification requirement):
- * all HTTP is expressed through `routing` and n8n's built-in request helper.
+ * Fields are NOT hardcoded. Create/Update use an n8n resource mapper that loads
+ * the connected organization's real lead schema from /leads/fields/ — so each
+ * org sees its own Field Editor fields (labels, required flags, select options,
+ * custom fields), exactly as configured in the CRM. See getLeadFields() below.
  */
+
+// The partner /leads/fields/ endpoint returns the same wire types the CRM's
+// Zapier surface uses. Map them to n8n resource-mapper column types. Anything
+// not listed falls through to 'string', which the CRM accepts for text values.
+// A field that carries `choices` becomes an 'options' column regardless of type.
+const CRM_TYPE_TO_N8N: Record<string, ResourceMapperField['type']> = {
+	string: 'string',
+	text: 'string',
+	number: 'number',
+	boolean: 'boolean',
+	datetime: 'dateTime',
+	date: 'dateTime',
+	// document_url etc. arrive as strings; a file URL is still just a string.
+	file: 'string',
+};
+
+/** The CRM stores select options as a JSON list of either bare strings or
+ *  {value,label}/{value,name} objects. Normalise both to n8n's option shape. */
+function normaliseOptions(options: unknown): INodePropertyOptions[] {
+	if (!Array.isArray(options)) return [];
+	return options.map((o) => {
+		if (o && typeof o === 'object') {
+			const rec = o as Record<string, unknown>;
+			const value = String(rec.value ?? rec.name ?? rec.label ?? '');
+			const name = String(rec.label ?? rec.name ?? rec.value ?? value);
+			return { name, value };
+		}
+		return { name: String(o), value: String(o) };
+	});
+}
+
 export class SkodeCrm implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Skode CRM',
@@ -52,23 +92,10 @@ export class SkodeCrm implements INodeType {
 			},
 		},
 		properties: [
-			{
-				displayName: 'Organization ID',
-				name: 'organizationId',
-				type: 'string',
-				default: '',
-				description: 'Which Skode CRM workspace to act in. Required only if your account belongs to more than one organization — leave blank for single-org accounts. Find it in the CRM under Settings, or in the address bar as ?org=. Sent as the X-Skode-Org-ID header.',
-				routing: {
-					// Sent as a header, and only when filled ($value || undefined
-					// makes n8n omit it entirely for single-org accounts). Never
-					// touches the request body.
-					request: {
-						headers: {
-							'X-Skode-Org-Id': '={{ $value || undefined }}',
-						},
-					},
-				},
-			},
+			// NOTE: there is deliberately NO "Organization ID" field. The CRM
+			// binds the target workspace to the OAuth token at the consent
+			// screen (you pick the org when you click Connect), and the partner
+			// API resolves it from that binding server-side.
 			{
 				displayName: 'Resource',
 				name: 'resource',
@@ -126,7 +153,7 @@ export class SkodeCrm implements INodeType {
 				default: 'create',
 			},
 
-			// ── Create / Update fields ─────────────────────────────────────
+			// ── Update: which lead ─────────────────────────────────────────
 			{
 				displayName: 'Lead ID',
 				name: 'leadId',
@@ -136,94 +163,41 @@ export class SkodeCrm implements INodeType {
 				displayOptions: { show: { resource: ['lead'], operation: ['update'] } },
 				description: 'Numeric ID of the lead to update',
 			},
+
+			// ── Create / Update fields — loaded from THIS org's Field Editor ──
 			{
-				displayName: 'Email',
-				name: 'email',
-				type: 'string',
-				placeholder: 'name@example.com',
-				default: '',
-				displayOptions: { show: { resource: ['lead'], operation: ['create'] } },
-				routing: { send: { type: 'body', property: 'email' } },
-			},
-			{
-				displayName: 'Additional Fields',
-				name: 'additionalFields',
-				type: 'collection',
-				placeholder: 'Add Field',
-				default: {},
+				displayName: 'Fields',
+				name: 'leadFields',
+				type: 'resourceMapper',
+				noDataExpression: true,
+				default: { mappingMode: 'defineBelow', value: null },
+				required: true,
 				displayOptions: {
 					show: { resource: ['lead'], operation: ['create', 'update'] },
 				},
 				description:
-					'Any CRM lead field. Use "Get fields" in the CRM (or the fields endpoint) to see the exact keys your org accepts, including custom fields.',
-				options: [
-					{
-						displayName: 'Company',
-						name: 'company',
-						type: 'string',
-						default: '',
-						routing: { send: { type: 'body', property: 'company' } },
+					"The lead's fields, loaded live from your organization's Field Editor — including custom fields",
+				typeOptions: {
+					loadOptionsDependsOn: ['resource', 'operation'],
+					resourceMapper: {
+						resourceMapperMethod: 'getLeadFields',
+						mode: 'add',
+						fieldWords: { singular: 'field', plural: 'fields' },
+						// Show ONLY required fields by default; every optional field
+						// is added on demand via the "Add field to send" picker.
+						addAllFields: false,
+						multiKeyMatch: false,
+						supportAutoMap: true,
 					},
-					{
-						displayName: 'Contact Name',
-						name: 'contact_name',
-						type: 'string',
-						default: '',
-						routing: { send: { type: 'body', property: 'contact_name' } },
+				},
+				// The mapped {key: value} object IS the request body for both the
+				// POST (create) and PATCH (update). Empty values are omitted by
+				// the mapper, so PATCH stays a partial update.
+				routing: {
+					request: {
+						body: '={{ $value.value || {} }}',
 					},
-					{
-						displayName: 'Custom Fields (JSON)',
-						name: 'customFieldsJson',
-						type: 'json',
-						default: '{}',
-						description:
-							'Any additional field keys as a JSON object, merged into the request body',
-						routing: { send: { type: 'body', value: '={{ JSON.parse($value || "{}") }}' } },
-					},
-					{
-						displayName: 'First Name',
-						name: 'first_name',
-						type: 'string',
-						default: '',
-						routing: { send: { type: 'body', property: 'first_name' } },
-					},
-					{
-						displayName: 'Last Name',
-						name: 'last_name',
-						type: 'string',
-						default: '',
-						routing: { send: { type: 'body', property: 'last_name' } },
-					},
-					{
-						displayName: 'Phone',
-						name: 'phone',
-						type: 'string',
-						default: '',
-						routing: { send: { type: 'body', property: 'phone' } },
-					},
-					{
-						displayName: 'Project',
-						name: 'projects',
-						type: 'string',
-						default: '',
-						description: 'Project name (created if it does not exist)',
-						routing: { send: { type: 'body', property: 'projects' } },
-					},
-					{
-						displayName: 'Source',
-						name: 'lead_source',
-						type: 'string',
-						default: '',
-						routing: { send: { type: 'body', property: 'lead_source' } },
-					},
-					{
-						displayName: 'Status',
-						name: 'status',
-						type: 'string',
-						default: '',
-						routing: { send: { type: 'body', property: 'status' } },
-					},
-				],
+				},
 			},
 
 			// ── Search / Get Many params ───────────────────────────────────
@@ -257,5 +231,68 @@ export class SkodeCrm implements INodeType {
 				routing: { send: { type: 'query', property: 'page_size' } },
 			},
 		],
+	};
+
+	methods = {
+		resourceMapping: {
+			// Loads the connected org's lead schema so the mapper shows that
+			// org's actual fields. On Update every field is optional (PATCH is
+			// partial); on Create the CRM's required flags are honoured.
+			async getLeadFields(this: ILoadOptionsFunctions): Promise<ResourceMapperFields> {
+				const credentials = await this.getCredentials('skodeCrmOAuth2Api');
+				const baseUrl = String(credentials.baseUrl).replace(/\/$/, '');
+				const operation = this.getNodeParameter('operation', 0) as string;
+
+				let response: { fields?: Array<Record<string, unknown>> };
+				try {
+					response = await this.helpers.httpRequestWithAuthentication.call(
+						this,
+						'skodeCrmOAuth2Api',
+						{
+							method: 'GET',
+							url: `${baseUrl}/api/partner/v1/leads/fields/`,
+							headers: { 'X-Skode-Partner': 'n8n' },
+							json: true,
+						},
+					);
+				} catch {
+					// A schema lookup failure must not brick the node — fall back
+					// to a free-form mapper so the user can still send raw keys.
+					return { fields: [] };
+				}
+
+				const raw = Array.isArray(response?.fields) ? response.fields : [];
+				const fields: ResourceMapperField[] = [];
+
+				for (const f of raw) {
+					const key = String(f.key ?? '');
+					if (!key) continue;
+
+					// A field with `choices` (status, priority, team member,
+					// country, select) is a dropdown; everything else maps by type.
+					const hasChoices = Array.isArray(f.choices) && f.choices.length > 0;
+					const type: ResourceMapperField['type'] = hasChoices
+						? 'options'
+						: CRM_TYPE_TO_N8N[String(f.type ?? 'string')] ?? 'string';
+
+					const column: ResourceMapperField = {
+						id: key,
+						displayName: String(f.label ?? key),
+						required: operation === 'create' ? f.required === true : false,
+						defaultMatch: false,
+						canBeUsedToMatch: false,
+						display: true,
+						type,
+						readOnly: false,
+					};
+					if (type === 'options') {
+						column.options = normaliseOptions(f.choices);
+					}
+					fields.push(column);
+				}
+
+				return { fields };
+			},
+		},
 	};
 }
