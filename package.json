@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-skodecrm",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "n8n community node for SkedX CRM — manage leads and trigger on lead events.",
   "keywords": [
     "n8n-community-node-package",
