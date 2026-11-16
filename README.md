@@ -1,6 +1,6 @@
 # n8n-nodes-skodecrm
 
-An [n8n](https://n8n.io) community node for **[Skode CRM](https://skode.ai)**. Create, update
+An [n8n](https://n8n.io) community node for **[SkedX CRM](https://skedx.io)**. Create, update
 and search leads, and trigger workflows on lead events.
 
 [Installation](#installation) · [Credentials](#credentials) · [Operations](#operations) ·
@@ -13,7 +13,7 @@ guide. In n8n: **Settings → Community Nodes → Install**, enter `n8n-nodes-sk
 
 ## Credentials
 
-This node authenticates with **OAuth2** against your Skode CRM — the same OAuth server the Skode
+This node authenticates with **OAuth2** against your SkedX CRM — the same OAuth server the SkedX
 Zapier integration uses.
 
 **CRM admin, one-time:** register an OAuth application for n8n in the CRM and note the **client ID**
@@ -22,7 +22,7 @@ and **client secret**. Add n8n's redirect URL to the app's allowed redirect URIs
 - n8n Cloud: `https://oauth.n8n.cloud/oauth2/callback`
 - self-hosted: `https://<your-n8n-host>/rest/oauth2-credential/callback`
 
-**In n8n**, create a *Skode CRM OAuth2 API* credential:
+**In n8n**, create a *SkedX CRM OAuth2 API* credential:
 
 | Field | Value |
 | --- | --- |
@@ -52,7 +52,7 @@ Field keys match your org's schema. Use the CRM's *fields* endpoint
 
 ## Trigger
 
-**Skode CRM Trigger** fires on a lead event (created / updated / status changed). It registers
+**SkedX CRM Trigger** fires on a lead event (created / updated / status changed). It registers
 n8n's webhook URL with the CRM (`POST /api/partner/v1/hooks/`) when the workflow activates and
 removes it on deactivate — no polling.
 

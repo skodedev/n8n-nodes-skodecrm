@@ -8,7 +8,7 @@ import type {
 import { NodeConnectionTypes } from 'n8n-workflow';
 
 /**
- * Skode CRM Trigger — fires a workflow when a lead event happens.
+ * SkedX CRM Trigger — fires a workflow when a lead event happens.
  *
  * Uses the CRM's REST-hook endpoints (the same ones the Zapier app uses):
  *   POST   /api/partner/v1/hooks/        { target_url, event }  -> subscription
@@ -19,15 +19,15 @@ import { NodeConnectionTypes } from 'n8n-workflow';
  */
 export class SkodeCrmTrigger implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Skode CRM Trigger',
+		displayName: 'SkedX CRM Trigger',
 		name: 'skodeCrmTrigger',
 		icon: { light: 'file:skodecrm.light.svg', dark: 'file:skodecrm.dark.svg' },
 		group: ['trigger'],
 		version: 1,
 		subtitle: '={{$parameter["event"]}}',
-		description: 'Starts a workflow on a Skode CRM lead event',
+		description: 'Starts a workflow on a SkedX CRM lead event',
 		defaults: {
-			name: 'Skode CRM Trigger',
+			name: 'SkedX CRM Trigger',
 		},
 		inputs: [],
 		outputs: [NodeConnectionTypes.Main],
@@ -126,7 +126,7 @@ export class SkodeCrmTrigger implements INodeType {
 					// a genuine failure (auth expired, CRM down) is visible rather
 					// than silently leaving a live subscription behind.
 					this.logger.warn(
-						`Skode CRM Trigger: could not remove webhook subscription ${webhookData.subscriptionId}: ${
+						`SkedX CRM Trigger: could not remove webhook subscription ${webhookData.subscriptionId}: ${
 							(error as Error)?.message ?? error
 						}`,
 					);

@@ -1,18 +1,19 @@
 {
   "name": "n8n-nodes-skodecrm",
   "version": "0.1.9",
-  "description": "n8n community node for Skode CRM — manage leads and trigger on lead events.",
+  "description": "n8n community node for SkedX CRM — manage leads and trigger on lead events.",
   "keywords": [
     "n8n-community-node-package",
     "skode",
+    "skedx",
     "crm",
     "leads"
   ],
   "license": "MIT",
-  "homepage": "https://skode.ai",
+  "homepage": "https://skedx.io",
   "author": {
-    "name": "Skode Technologies Pvt Ltd",
-    "email": "info@skode.ai"
+    "name": "SkedX",
+    "email": "info@skedx.io"
   },
   "repository": {
     "type": "git",

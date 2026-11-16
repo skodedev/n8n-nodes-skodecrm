@@ -9,7 +9,7 @@ import type {
 import { NodeConnectionTypes } from 'n8n-workflow';
 
 /**
- * Skode CRM — declarative node.
+ * SkedX CRM — declarative node.
  *
  * Talks to the CRM's PARTNER integration surface — deliberately NOT the Zapier
  * one, which is owner-locked, shares Zapier's throttle bucket, and stamps every
@@ -59,7 +59,7 @@ function normaliseOptions(options: unknown): INodePropertyOptions[] {
 
 export class SkodeCrm implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Skode CRM',
+		displayName: 'SkedX CRM',
 		name: 'skodeCrm',
 		icon: { light: 'file:skodecrm.light.svg', dark: 'file:skodecrm.dark.svg' },
 		group: ['transform'],
@@ -68,9 +68,9 @@ export class SkodeCrm implements INodeType {
 		// described CRM action against one org, gated by the credential.
 		usableAsTool: true,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-		description: 'Create, update and search leads in Skode CRM',
+		description: 'Create, update and search leads in SkedX CRM',
 		defaults: {
-			name: 'Skode CRM',
+			name: 'SkedX CRM',
 		},
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],

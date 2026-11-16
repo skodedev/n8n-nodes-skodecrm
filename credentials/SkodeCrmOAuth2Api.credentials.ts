@@ -1,8 +1,8 @@
 import type { ICredentialType, INodeProperties } from 'n8n-workflow';
 
 /**
- * OAuth2 (authorization-code) against Skode CRM — the SAME OAuth server the
- * Skode Zapier integration uses (django-oauth-toolkit):
+ * OAuth2 (authorization-code) against SkedX CRM — the SAME OAuth server the
+ * SkedX Zapier integration uses (django-oauth-toolkit):
  *   authorize: <baseUrl>/oauth/authorize/
  *   token:     <baseUrl>/oauth/token/
  *
@@ -20,9 +20,9 @@ export class SkodeCrmOAuth2Api implements ICredentialType {
 	// Themed variants so the mark reads correctly on light and dark canvases.
 	icon = { light: 'file:../nodes/SkodeCrm/skodecrm.light.svg', dark: 'file:../nodes/SkodeCrm/skodecrm.dark.svg' } as const;
 
-	displayName = 'Skode CRM OAuth2 API';
+	displayName = 'SkedX CRM OAuth2 API';
 
-	documentationUrl = 'https://skode.ai';
+	documentationUrl = 'https://skedx.io';
 
 	properties: INodeProperties[] = [
 		{
@@ -32,7 +32,7 @@ export class SkodeCrmOAuth2Api implements ICredentialType {
 			default: 'https://crmserver.skode.ai',
 			required: true,
 			description:
-				'Your Skode CRM origin, no trailing slash. Both the API (/api) and OAuth (/oauth) live here.',
+				'Your SkedX CRM origin, no trailing slash. Both the API (/api) and OAuth (/oauth) live here.',
 		},
 		{
 			displayName: 'Grant Type',
